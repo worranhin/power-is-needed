@@ -32,8 +32,11 @@ export class MainGame extends Scene {
     satisfaction: number = 50;
     lastSeconds: number = 0;
 
-    constructor() {
-        super('Game');
+    constructor(key?: string) {
+        if (key === undefined) {
+            key = 'Game';
+        }
+        super(key);
     }
 
     init() {
@@ -51,7 +54,9 @@ export class MainGame extends Scene {
     create() {
         this.camera = this.cameras.main;
 
-        this.text = this.add.text(0, 80, '').setDepth(100);
+        this.text = this.add.text(0, 80, '', {
+            backgroundColor: 'rgba(0, 0, 0, 0.3)'
+        }).setDepth(100);
         this.powerStations = this.add.group();
         this.citys = this.add.group();
         this.powerLines = this.add.group();
@@ -165,6 +170,7 @@ export class MainGame extends Scene {
             this.pointerObject = null;
             this.pointerState = PointerState.Normal;  // reset state
             this.sound.play(SoundKey.PlaceDown);
+            this.events.emit('powerStationPlaced');
         }
     }
 
@@ -182,8 +188,6 @@ export class MainGame extends Scene {
     }
 
     handleObjectDown(_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) {
-        // console.log("object down");
-
         // handle connecting action
         if (this.pointerState === PointerState.Normal) {
             if (this.citys.contains(gameObject)) {  // source of connection
@@ -194,6 +198,7 @@ export class MainGame extends Scene {
                 this.connectFrom = city;
                 this.pointerObject = this.add.line(x, y, 0, 0, 0, 0, 0xffffff).setOrigin(0).setLineWidth(4);
                 this.pointerState = PointerState.Connecting;
+                this.sound.play(SoundKey.Connect);
             } else if (this.powerStations.contains(gameObject)) {
                 const station = gameObject as PowerStation;
 
@@ -202,8 +207,8 @@ export class MainGame extends Scene {
                 this.connectFrom = station;
                 this.pointerObject = this.add.line(x, y, 0, 0, 0, 0, 0xffffff).setOrigin(0).setLineWidth(4);
                 this.pointerState = PointerState.Connecting;
+                this.sound.play(SoundKey.Connect);
             }
-            this.sound.play(SoundKey.Connect);
         } else if (this.pointerState === PointerState.Connecting && this.connectFrom) {
             if (this.citys.contains(gameObject)) {  // target of connectioon
                 const city = gameObject as City;
@@ -220,6 +225,8 @@ export class MainGame extends Scene {
                 this.pointerObject?.destroy();
                 this.pointerObject = null;
                 this.pointerState = PointerState.Normal;
+                this.events.emit('connected');
+                this.sound.play(SoundKey.Connect);
             } else if (this.powerStations.contains(gameObject)) {
                 const station = gameObject as PowerStation;
                 const source = this.connectFrom as BuildingInterface;
@@ -235,8 +242,9 @@ export class MainGame extends Scene {
                 this.pointerObject?.destroy();
                 this.pointerObject = null;
                 this.pointerState = PointerState.Normal;
+                this.events.emit('connected');
+                this.sound.play(SoundKey.Connect);
             }
-            this.sound.play(SoundKey.Connect);
         }
     }
 
