@@ -1,10 +1,12 @@
 import { Scene, GameObjects } from 'phaser';
 import Color_str from '../const/Color_str';
+import SoundKey from '../const/SoundKey';
 
 export class MainMenu extends Scene {
     background: GameObjects.Image;
     logo: GameObjects.Image;
     title: GameObjects.Text;
+    bgm: Phaser.Sound.HTML5AudioSound;
 
     constructor() {
         super('MainMenu');
@@ -33,6 +35,11 @@ export class MainMenu extends Scene {
             .on('pointerdown', () => {
                 this.scene.start('Tutorial2');
             });
+
+        if (!this.bgm) {
+            this.bgm = this.sound.add(SoundKey.BGM, { loop: true }) as Phaser.Sound.HTML5AudioSound;
+            this.bgm.play();
+        }
 
         Phaser.Actions.AlignTo([startText, tutorText], Phaser.Display.Align.BOTTOM_CENTER, 0, 50);
 

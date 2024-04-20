@@ -5,6 +5,7 @@ import PowerLine from '../classes/PowerLine';
 import type BuildingInterface from '../classes/BuildingType';
 import PowerGrid from '../classes/PowerGrid';
 import GameOverInput from '../classes/GameOverInput';
+import SoundKey from '../const/SoundKey';
 
 enum PointerState {
     Normal,
@@ -73,7 +74,7 @@ export class MainGame extends Scene {
 
 
 
-        // set timers
+        // Set Timers
 
         this.time.addEvent({
             delay: 1000,
@@ -147,6 +148,7 @@ export class MainGame extends Scene {
         const pointerY = pointer.y;
         this.pointerObject = this.add.rectangle(pointerX, pointerY, 32, 32, 0xffff00);
         this.pointerState = PointerState.Building;
+        this.sound.play(SoundKey.PickUp);
         e.stopPropagation();
     }
 
@@ -162,6 +164,7 @@ export class MainGame extends Scene {
             this.pointerObject.destroy();
             this.pointerObject = null;
             this.pointerState = PointerState.Normal;  // reset state
+            this.sound.play(SoundKey.PlaceDown);
         }
     }
 
@@ -200,6 +203,7 @@ export class MainGame extends Scene {
                 this.pointerObject = this.add.line(x, y, 0, 0, 0, 0, 0xffffff).setOrigin(0).setLineWidth(4);
                 this.pointerState = PointerState.Connecting;
             }
+            this.sound.play(SoundKey.Connect);
         } else if (this.pointerState === PointerState.Connecting && this.connectFrom) {
             if (this.citys.contains(gameObject)) {  // target of connectioon
                 const city = gameObject as City;
@@ -232,6 +236,7 @@ export class MainGame extends Scene {
                 this.pointerObject = null;
                 this.pointerState = PointerState.Normal;
             }
+            this.sound.play(SoundKey.Connect);
         }
     }
 
@@ -328,7 +333,7 @@ export class MainGame extends Scene {
 
             if (hasSpace) {
                 upCity.upgrade();
-                console.log(spaceNeeded);
+                this.sound.play(SoundKey.PopUp);
             }
         } else {  // check for add city
             hasSpace = hasSpace && this.citys.getChildren().every(city => {  // check if space enough
@@ -351,7 +356,15 @@ export class MainGame extends Scene {
 
             if (hasSpace) {
                 const ct = new City(this, x, y);
+                ct.scale = 0.1;
                 this.citys.add(ct, true);
+                this.sound.play(SoundKey.PopUp);
+                this.tweens.add({
+                    targets: ct,
+                    scale: 1,
+                    duration: 500,
+                    ease: 'Back.out'
+                });
                 this.powerGrids.push(ct.grid);
             }
         }
