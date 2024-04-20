@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import GameOverInput from '../classes/GameOverInput';
+import Color_str from '../const/Color_str';
 
 export class GameOver extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -32,17 +33,21 @@ export class GameOver extends Scene {
         const sumerizeText = this.add.text(this.scale.width / 2, 450, '', 
             { fontSize: 32 }).setOrigin(0.5, 0);
 
-        sumerizeText.text += `You have provided ${this.seconds} years of power.\n`;
+        sumerizeText.text += `You have provided ${this.seconds} months of power.\n`;
 
         const cityCount = this.inputData.cityCount;
         cityCount.forEach((count, level) => {
             sumerizeText.text += `You have served ${count} cities of level ${level}.\n`;
         })
 
-        this.add.text(512, 650, 'Return to main menu.', {
+        const returnText = this.add.text(512, 650, 'Return to main menu.', {
             fontFamily: 'Arial Black', fontSize: 32, color: '#ffffff',
         }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).on('pointerdown', () => {
             this.scene.start('MainMenu');
+        }).on('pointerover', function() {
+            returnText.setColor(Color_str.Primary);
+        }).on('pointerout', function() {
+            returnText.setColor('#ffffff');
         });
     }
 }

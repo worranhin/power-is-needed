@@ -3,7 +3,7 @@ import { MainGame } from './scenes/MainGame';
 import { GameOver } from './scenes/GameOver';
 import { MainMenu } from './scenes/MainMenu';
 import { Preloader } from './scenes/Preloader';
-import { Tutorial } from './scenes/Tutorial';
+import { Tutorial2 } from './scenes/Tutorial2';
 
 import { Game, Types } from "phaser";
 import Color_str from './const/Color_str';
@@ -26,7 +26,7 @@ const config: Types.Core.GameConfig = {
         MainMenu,
         MainGame,
         GameOver,
-        Tutorial
+        Tutorial2
     ]
 };
 

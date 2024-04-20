@@ -18,7 +18,7 @@ export class MainMenu extends Scene {
         this.title = this.add.text(512, 150, 'Power Is Needed', {
             fontFamily: 'Arial Black', fontSize: 90, color: Color_str.Primary, align: 'center'
         }).setOrigin(0.5);
-        this.add.text(512, 400, 'Start the Game', {
+        const startText = this.add.text(512, 400, 'Start', {
             fontSize: 48, align: 'center'
         }).setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
@@ -26,13 +26,32 @@ export class MainMenu extends Scene {
                 this.scene.start('Game');
             });
 
-        this.add.text(512, 500, 'Tutorial', {
+        const tutorText = this.add.text(512, 500, 'Tutorial', {
             fontSize: 48, align: 'center'
         }).setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                this.scene.start('Tutorial');
+                this.scene.start('Tutorial2');
             });
+
+        Phaser.Actions.AlignTo([startText, tutorText], Phaser.Display.Align.BOTTOM_CENTER, 0, 50);
+
+        startText.on('pointerover', () => {
+            startText.setColor(Color_str.Primary);
+        });
+        startText.on('pointerout', () => {
+            startText.setColor('#ffffff');
+        });
+        tutorText.on('pointerover', () => {
+            tutorText.setColor(Color_str.Primary);
+        });
+        tutorText.on('pointerout', () => {
+            tutorText.setColor('#ffffff');
+        })
+
+        // this.input.on('gameobjectover', (_p: Phaser.Input.Pointer, o: Phaser.GameObjects.GameObject) => {
+
+        // })
 
         // this.scene.start('Game');
     }
