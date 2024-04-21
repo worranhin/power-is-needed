@@ -31,6 +31,7 @@ export class MainGame extends Scene {
     connectFrom: BuildingInterface | null = null;
     satisfaction: number = 50;
     lastSeconds: number = 0;
+    randomWeight: number = 0.5;
 
     constructor(key?: string) {
         if (key === undefined) {
@@ -49,6 +50,7 @@ export class MainGame extends Scene {
         this.pointerObject = null;
         this.overObject?.destroy();
         this.overObject = null;
+        this.randomWeight = 0.5;
     }
 
     create() {
@@ -61,9 +63,7 @@ export class MainGame extends Scene {
         this.citys = this.add.group();
         this.powerLines = this.add.group();
 
-        const city = new City(this, 512, 384);
-        this.citys.add(city, true);
-        this.powerGrids.push(city.grid);
+        this.checkAddCity();
 
         // toolbar
         // this.toolBar = this.add.container(0, 0);
@@ -296,13 +296,27 @@ export class MainGame extends Scene {
     }
 
     checkAddCity() {
-        const x = Phaser.Math.Between(64, this.scale.width - 64);
-        const y = Phaser.Math.Between(64, this.scale.height - 64);
+        let xSum = 0;
+        let ySum = 0;
+        let count = 0;
+        this.citys.getChildren().forEach(city => {
+            xSum += (city as City).x * (city as City).level;
+            ySum += (city as City).y * (city as City).level;
+            count += (city as City).level;
+        });
+
+        const x1 = Phaser.Math.Between(64, this.scale.width - 64);
+        const y1 = Phaser.Math.Between(64, this.scale.height - 64);
+        const x2 = count === 0 ? x1 : xSum / count;
+        const y2 = count === 0 ? y1 : ySum / count;
+        
+        const x = this.randomWeight * x1 + (1 - this.randomWeight) * x2;
+        const y = this.randomWeight * y1 + (1 - this.randomWeight) * y2;
         let upCity!: City;
         let nearCity = false;
         let hasSpace = true;
         let spaceNeeded = 16;
-        const gap = 16;
+        const gap = 40;  // 48
 
         this.citys.getChildren().every(city => {  // check if space enough
             const ct = city as City;
@@ -341,7 +355,10 @@ export class MainGame extends Scene {
 
             if (hasSpace) {
                 upCity.upgrade();
+                this.randomWeight = Math.max(0, this.randomWeight - 0.1);
                 this.sound.play(SoundKey.PopUp);
+            } else {
+                this.randomWeight = Math.min(1, 0.5 * (1 + this.randomWeight));
             }
         } else {  // check for add city
             hasSpace = hasSpace && this.citys.getChildren().every(city => {  // check if space enough
@@ -374,6 +391,9 @@ export class MainGame extends Scene {
                     ease: 'Back.out'
                 });
                 this.powerGrids.push(ct.grid);
+                this.randomWeight = Math.max(0, this.randomWeight - 0.1);
+            } else {
+                this.randomWeight = Math.min(1, 0.5 * (1 + this.randomWeight));
             }
         }
     }
