@@ -3,7 +3,7 @@ import { MainGame } from './MainGame';
 
 export class Tutorial extends MainGame {
     constructor() {
-        super('Tutorial2');
+        super('Tutorial');
     }
 
     create() {

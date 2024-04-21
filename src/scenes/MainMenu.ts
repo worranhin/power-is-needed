@@ -1,6 +1,7 @@
 import { Scene, GameObjects } from 'phaser';
 import Color_str from '../const/Color_str';
 import SoundKey from '../const/SoundKey';
+import WebFont from 'webfontloader';
 
 export class MainMenu extends Scene {
     background: GameObjects.Image;
@@ -16,10 +17,18 @@ export class MainMenu extends Scene {
         // this.background = this.add.image(512, 384, 'background');
 
         // this.logo = this.add.image(512, 300, 'logo');
+        
+        WebFont.load({
+            custom: {
+                families: ['PowerRangers']
+            },
+            active: () => {
+                this.title = this.add.text(this.scale.width / 2, 160, 'Power Is Needed', {
+                    fontFamily: 'PowerRangers', fontSize: 150, color: Color_str.Primary
+                }).setOrigin(0.5);
+            }
+        });
 
-        this.title = this.add.text(512, 150, 'Power Is Needed', {
-            fontFamily: 'Arial Black', fontSize: 90, color: Color_str.Primary, align: 'center'
-        }).setOrigin(0.5);
         const startText = this.add.text(512, 400, 'Start', {
             fontSize: 48, align: 'center'
         }).setOrigin(0.5)
@@ -33,7 +42,7 @@ export class MainMenu extends Scene {
         }).setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                this.scene.start('Tutorial2');
+                this.scene.start('Tutorial');
             });
 
         if (!this.bgm) {

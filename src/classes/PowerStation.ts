@@ -14,5 +14,7 @@ export default class PowerStation extends Phaser.GameObjects.Rectangle implement
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 32, 32, 0xffff00);
     this.grid = new PowerGrid().addProducer(this);
+    this.setInteractive();
+    scene.physics.add.existing(this, true);
   }  
 }

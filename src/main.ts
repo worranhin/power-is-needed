@@ -27,7 +27,10 @@ const config: Types.Core.GameConfig = {
         MainGame,
         GameOver,
         Tutorial
-    ]
+    ],
+    physics: {
+        default: 'arcade'
+    }
 };
 
 export default new Game(config);

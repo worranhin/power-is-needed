@@ -152,6 +152,7 @@ export class MainGame extends Scene {
         const pointerX = pointer.x;
         const pointerY = pointer.y;
         this.pointerObject = this.add.rectangle(pointerX, pointerY, 32, 32, 0xffff00);
+        this.physics.add.existing(this.pointerObject);
         this.pointerState = PointerState.Building;
         this.sound.play(SoundKey.PickUp);
         e.stopPropagation();
@@ -162,7 +163,16 @@ export class MainGame extends Scene {
             const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, 32, 32);
             if (dist < 64)
                 return;
-            const st = new PowerStation(this, pointer.x, pointer.y).setInteractive();
+
+            const noOverlaps = this.powerStations.getChildren().every((station) => {
+                const st = station as PowerStation;
+                const isOverlap = this.physics.overlap(st, this.pointerObject as Phaser.GameObjects.Rectangle);
+                return !isOverlap;
+            });
+            if (!noOverlaps)
+                return;
+
+            const st = new PowerStation(this, pointer.x, pointer.y);
             this.powerStations.add(st, true);
             this.powerGrids.push(st.grid);
 
@@ -309,7 +319,7 @@ export class MainGame extends Scene {
         const y1 = Phaser.Math.Between(64, this.scale.height - 64);
         const x2 = count === 0 ? x1 : xSum / count;
         const y2 = count === 0 ? y1 : ySum / count;
-        
+
         const x = this.randomWeight * x1 + (1 - this.randomWeight) * x2;
         const y = this.randomWeight * y1 + (1 - this.randomWeight) * y2;
         let upCity!: City;
