@@ -6,6 +6,7 @@ import type BuildingInterface from '../classes/BuildingType';
 import PowerGrid from '../classes/PowerGrid';
 import GameOverInput from '../classes/GameOverInput';
 import SoundKey from '../const/SoundKey';
+import SceneKey from '../const/SceneKey';
 
 enum PointerState {
     Normal,
@@ -35,7 +36,7 @@ export class MainGame extends Scene {
 
     constructor(key?: string) {
         if (key === undefined) {
-            key = 'Game';
+            key = SceneKey.MainGame;
         }
         super(key);
     }

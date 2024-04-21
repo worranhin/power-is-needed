@@ -2,6 +2,7 @@ import { Scene, GameObjects } from 'phaser';
 import Color_str from '../const/Color_str';
 import SoundKey from '../const/SoundKey';
 import WebFont from 'webfontloader';
+import SceneKey from '../const/SceneKey';
 
 export class MainMenu extends Scene {
     background: GameObjects.Image;
@@ -17,7 +18,7 @@ export class MainMenu extends Scene {
         // this.background = this.add.image(512, 384, 'background');
 
         // this.logo = this.add.image(512, 300, 'logo');
-        
+
         WebFont.load({
             custom: {
                 families: ['PowerRangers']
@@ -34,7 +35,7 @@ export class MainMenu extends Scene {
         }).setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                this.scene.start('Game');
+                this.scene.start(SceneKey.MainGame);
             });
 
         const tutorText = this.add.text(512, 500, 'Tutorial', {
@@ -42,7 +43,15 @@ export class MainMenu extends Scene {
         }).setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                this.scene.start('Tutorial');
+                this.scene.start(SceneKey.Tutorial);
+            });
+
+        const creditsText = this.add.text(512, 500, 'Credits', {
+            fontSize: 48, align: 'center'
+        }).setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                this.scene.start(SceneKey.Credits);
             });
 
         if (!this.bgm) {
@@ -50,25 +59,25 @@ export class MainMenu extends Scene {
             this.bgm.play();
         }
 
-        Phaser.Actions.AlignTo([startText, tutorText], Phaser.Display.Align.BOTTOM_CENTER, 0, 50);
+        Phaser.Actions.AlignTo([startText, tutorText, creditsText], Phaser.Display.Align.BOTTOM_CENTER, 0, 48);
 
-        startText.on('pointerover', () => {
-            startText.setColor(Color_str.Primary);
-        });
-        startText.on('pointerout', () => {
-            startText.setColor('#ffffff');
-        });
-        tutorText.on('pointerover', () => {
-            tutorText.setColor(Color_str.Primary);
-        });
-        tutorText.on('pointerout', () => {
-            tutorText.setColor('#ffffff');
-        })
+        startText.on('pointerover', this.handleOverText);
+        startText.on('pointerout', this.handleOutText);
+        tutorText.on('pointerover', this.handleOverText);
+        tutorText.on('pointerout', this.handleOutText);
+        creditsText.on('pointerover', this.handleOverText);
+        creditsText.on('pointerout', this.handleOutText);
+    }
 
-        // this.input.on('gameobjectover', (_p: Phaser.Input.Pointer, o: Phaser.GameObjects.GameObject) => {
+    handleOverText() {
+        if (this instanceof GameObjects.Text) {
+            this.setColor(Color_str.Primary);
+        }
+    }
 
-        // })
-
-        // this.scene.start('Game');
+    handleOutText() {
+        if (this instanceof GameObjects.Text) {
+            this.setColor('#ffffff');
+        }
     }
 }
