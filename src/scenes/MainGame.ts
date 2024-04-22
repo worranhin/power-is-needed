@@ -120,6 +120,8 @@ export class MainGame extends Scene {
         if (this.pointerObject && this.pointerState === PointerState.Building) {
             const po = this.pointerObject as Phaser.GameObjects.Rectangle;
             po.setPosition(this.input.activePointer.x, this.input.activePointer.y);
+            this.alignToPowerStations(po);
+
         } else if (this.pointerObject && this.pointerState === PointerState.Connecting) {
             const po = this.pointerObject as Phaser.GameObjects.Line;
             const x = this.input.activePointer.x;
@@ -165,17 +167,14 @@ export class MainGame extends Scene {
             if (dist < 64)
                 return;
 
-            const noOverlaps = this.powerStations.getChildren().every((station) => {
-                const st = station as PowerStation;
-                const isOverlap = this.physics.overlap(st, this.pointerObject as Phaser.GameObjects.Rectangle);
-                return !isOverlap;
-            });
-            if (!noOverlaps)
-                return;
-
             const st = new PowerStation(this, pointer.x, pointer.y);
+            const [autoConnect, connectStation] = this.alignToPowerStations(st);
             this.powerStations.add(st, true);
             this.powerGrids.push(st.grid);
+
+            if (autoConnect && connectStation) {
+                this.connect(st, connectStation);
+            }
 
             this.pointerObject.destroy();
             this.pointerObject = null;
@@ -224,13 +223,7 @@ export class MainGame extends Scene {
             if (this.citys.contains(gameObject)) {  // target of connectioon
                 const city = gameObject as City;
                 const source = this.connectFrom as BuildingInterface;
-                const pline = new PowerLine(this, source, city);  // build powerline
-                this.powerLines.add(pline, true);
-
-                this.powerGrids.splice(this.powerGrids.indexOf(source.grid), 1);  // merge power grid
-                this.powerGrids.splice(this.powerGrids.indexOf(city.grid), 1);
-                const grid = PowerGrid.mergeGrids(city.grid, source.grid);
-                this.powerGrids.push(grid);
+                this.connect(source, city);
 
                 this.connectFrom = null;
                 this.pointerObject?.destroy();
@@ -241,13 +234,7 @@ export class MainGame extends Scene {
             } else if (this.powerStations.contains(gameObject)) {
                 const station = gameObject as PowerStation;
                 const source = this.connectFrom as BuildingInterface;
-                const pline = new PowerLine(this, station, this.connectFrom as BuildingInterface);
-                this.powerLines.add(pline, true);
-
-                this.powerGrids.splice(this.powerGrids.indexOf(source.grid), 1);  // merge power grid
-                this.powerGrids.splice(this.powerGrids.indexOf(station.grid), 1);
-                const grid = PowerGrid.mergeGrids(station.grid, source.grid);
-                this.powerGrids.push(grid);
+                this.connect(source, station);
 
                 this.connectFrom = null;
                 this.pointerObject?.destroy();
@@ -271,8 +258,13 @@ export class MainGame extends Scene {
     }
 
     connect(from: BuildingInterface, to: BuildingInterface) {
-        from.to = to;
-        to.from = from;
+        const pline = new PowerLine(this, from, to);  // build powerline
+        this.powerLines.add(pline, true);
+
+        this.powerGrids.splice(this.powerGrids.indexOf(from.grid), 1);  // merge power grid
+        this.powerGrids.splice(this.powerGrids.indexOf(to.grid), 1);
+        const grid = PowerGrid.mergeGrids(from.grid, to.grid);
+        this.powerGrids.push(grid);
     }
 
     checkEndGame() {
@@ -407,5 +399,47 @@ export class MainGame extends Scene {
                 this.randomWeight = Math.min(1, 0.5 * (1 + this.randomWeight));
             }
         }
+    }
+
+    alignToPowerStations(obj: PowerStation | Phaser.GameObjects.Rectangle): [boolean, PowerStation | null] {
+        let minDist = Infinity;
+        let minDistObj: PowerStation | null = null;
+        this.powerStations.getChildren().forEach((station) => {
+            const st = station as PowerStation;
+            const dist = Phaser.Math.Distance.Between(st.x, st.y, obj.x, obj.y);
+            if (dist < minDist) {
+                minDist = dist;
+                minDistObj = st;
+            }
+        });
+
+        let x = obj.x;
+        let y = obj.y;
+        let aligned = false;
+        if (minDist < 48 && minDistObj) {
+            const st = minDistObj as PowerStation;
+            const dx = obj.x - st.x;
+            const dy = obj.y - st.y;
+            if (dx < 0 && Math.abs(dy) < 16) {
+                x = st.x - 40;
+                y = st.y;
+                aligned = true;
+            } else if (dx > 0 && Math.abs(dy) < 16) {
+                x = st.x + 40;
+                y = st.y;
+                aligned = true;
+            } else if (dy < 0 && Math.abs(dx) < 16) {
+                x = st.x;
+                y = st.y - 40;
+                aligned = true;
+            } else if (dy > 0 && Math.abs(dx) < 16) {
+                x = st.x;
+                y = st.y + 40;
+                aligned = true;
+            }
+        }
+
+        obj.setPosition(x, y);
+        return [aligned, minDistObj];
     }
 }
