@@ -1,21 +1,23 @@
 import Color_num from "../const/Color_num";
-import type  BuildingType from "./BuildingType";
 import type City from "./City";
 import type PowerLine from "./PowerLine";
-import type PowerStation from "./PowerStation";
+import PowerStation from "./PowerStation";
 
 export default class PowerGrid {
-  consumers: BuildingType[] = [];
-  producers: BuildingType[] = [];
-  powerLines: BuildingType[] = [];
+  consumers: City[] = [];
+  producers: PowerStation[] = [];
+  powerLines: PowerLine[] = [];
   powerCapacity: number = 0;
+  powerUsage: number = 0;
   powerConsumption: number = 0;
+  static powerWasteRate: number = 1e-5;
 
   constructor() {
   }
 
   addConsumer(building: City) {
     this.consumers.push(building);
+    this.powerUsage += building.powerNeeded;
     this.powerConsumption += building.powerNeeded;
     building.grid = this;
     return this;
@@ -23,60 +25,59 @@ export default class PowerGrid {
 
   addProducer(building: PowerStation) {
     this.producers.push(building);
-    this.powerCapacity += building.powerProduced;
+    this.powerCapacity += PowerStation.capacity;
     return this;
   }
 
   addPowerLine(line: PowerLine) {
     this.powerLines.push(line);
-    this.powerConsumption += line.powerWasted;
+    this.powerUsage += line.powerWasted;
     return this;
   }
 
   update() {
+    this.powerUsage = 0;
     this.powerConsumption = 0;
-    this.consumers.forEach((consumer) => {
-      this.powerConsumption += (consumer as City).powerNeeded;
-    });
-
-    this.powerLines.forEach((line) => {
-      this.powerConsumption += (line as PowerLine).powerWasted;
-    })
-
     this.powerCapacity = 0;
-    this.producers.forEach((producer) => {
-      this.powerCapacity += (producer as PowerStation).powerProduced;
+
+    this.consumers.forEach((consumer) => {
+      this.powerUsage += consumer.powerNeeded;
+      this.powerConsumption += consumer.powerNeeded;
     });
 
-    if(this.powerConsumption <= this.powerCapacity) {
+    let totalLength = 0;
+    this.powerLines.forEach((line) => { totalLength += line.length; });
+    this.powerUsage += Math.pow(this.powerConsumption, 2) * totalLength * PowerGrid.powerWasteRate;
+
+    this.powerCapacity += this.producers.length * PowerStation.capacity;
+
+    if (this.powerUsage <= this.powerCapacity) {
       this.consumers.forEach((consumer) => {
         const city = consumer as City;
+        city.satisfied = true;
         city.fillColor = 0xffffff;
       });
     } else {
       this.consumers.forEach((consumer) => {
         const city = consumer as City;
+        city.satisfied = false;
         city.fillColor = Color_num.Warning;
       });
     }
   }
 
   updateConsumption() {
+    this.powerUsage = 0;
     this.powerConsumption = 0;
     this.consumers.forEach((consumer) => {
-      this.powerConsumption += (consumer as City).powerNeeded;
-    })
+      this.powerUsage += (consumer as City).powerNeeded;
+      this.powerConsumption += consumer.powerNeeded;
+    });
+    this.powerLines.forEach(line => { this.powerUsage += (line as PowerLine).powerWasted; })
   }
 
-  merge(grid: PowerGrid) {
-    this.consumers = this.consumers.concat(grid.consumers);
-    this.producers = this.producers.concat(grid.producers);
-    this.powerLines = this.powerLines.concat(grid.powerLines);
-
-    grid.consumers.forEach(consumer => consumer.grid = this);
-    grid.producers.forEach(pdc => pdc.grid = this);
-
-    return this;
+  updateCapacity() {
+    this.powerCapacity = this.producers.length * PowerStation.capacity;
   }
 
   static mergeGrids(grid1: PowerGrid, grid2: PowerGrid) {

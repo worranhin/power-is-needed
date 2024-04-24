@@ -8,8 +8,9 @@ export default class PowerStation extends Phaser.GameObjects.Rectangle implement
   to: BuildingInterface | null;
   powerReceived: number = 0;
   powerTransmitted: number = 0;
-  powerProduced: number = 10;
   grid: PowerGrid;
+  static price:number = 500;
+  static capacity:number = 10;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 32, 32, 0xffff00);

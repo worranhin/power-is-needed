@@ -4,6 +4,7 @@ import City from '../classes/City';
 import PowerLine from '../classes/PowerLine';
 import type BuildingInterface from '../classes/BuildingType';
 import PowerGrid from '../classes/PowerGrid';
+import ResearchBar from '../classes/ResearchBar';
 import GameOverInput from '../classes/GameOverInput';
 import SoundKey from '../const/SoundKey';
 import SceneKey from '../const/SceneKey';
@@ -22,8 +23,12 @@ export class MainGame extends Scene {
     powerStations: Phaser.GameObjects.Group;
     citys: Phaser.GameObjects.Group;
     powerLines: Phaser.GameObjects.Group;
-    text: Phaser.GameObjects.Text;
+    infoBox: Phaser.GameObjects.Text;
+    moneyText: Phaser.GameObjects.Text;
+    satisfactionText: Phaser.GameObjects.Text;
     toolBar: Phaser.GameObjects.Container;
+    researchBar: ResearchBar;
+    toastText: Phaser.GameObjects.Text;
 
     pointerObject: Phaser.GameObjects.GameObject | null;
     overObject: Phaser.GameObjects.GameObject | null;
@@ -33,6 +38,10 @@ export class MainGame extends Scene {
     satisfaction: number = 50;
     lastSeconds: number = 0;
     randomWeight: number = 0.5;
+    money: number;
+    powerPrice: number = 1;
+    stationPrice: number = 500;
+    sideBarOn: boolean = false;
 
     constructor(key?: string) {
         if (key === undefined) {
@@ -52,25 +61,33 @@ export class MainGame extends Scene {
         this.overObject?.destroy();
         this.overObject = null;
         this.randomWeight = 0.5;
+        this.money = 2000;
     }
 
     create() {
-        this.camera = this.cameras.main;
+        // this.camera = this.cameras.main;
+        this.createUI();
 
-        this.text = this.add.text(0, 80, '', {
-            backgroundColor: 'rgba(0, 0, 0, 0.3)'
-        }).setDepth(100);
-        this.powerStations = this.add.group();
-        this.citys = this.add.group();
-        this.powerLines = this.add.group();
-
-        this.checkAddCity();
-
-        // toolbar
-        // this.toolBar = this.add.container(0, 0);
-        this.add.grid(0, 0, 64, 64, 64, 64, 0xaaaaaa).setOrigin(0);
-        this.add.rectangle(32, 32, 32, 32, 0xffff00).setOrigin(0.5).setInteractive({ useHandCursor: true })
-            .on('pointerdown', this.handlePickUpPowerStation, this);
+        this.add.rectangle(this.scale.width - 32, 32, 32, 32, 0x00CC00).setOrigin(0.5).setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                if (!this.sideBarOn) {
+                    this.tweens.add({
+                        targets: this.researchBar,
+                        x: this.scale.width - 320,
+                        duration: 200
+                    });
+                    this.sideBarOn = true;
+                    this.events.emit('sideBarOpened');
+                } else {
+                    this.tweens.add({
+                        targets: this.researchBar,
+                        x: this.scale.width,
+                        duration: 200
+                    });
+                    this.sideBarOn = false;
+                    this.events.emit('sideBarClosed');
+                }
+            });
 
         // inputs
         this.input.on('gameobjectdown', this.handleObjectDown, this);
@@ -78,14 +95,15 @@ export class MainGame extends Scene {
         this.input.on('pointerdown', this.handlePlaceDownPowerStation, this);
         this.input.keyboard?.on('keydown-ESC', this.cancel, this);
 
-
-
         // Set Timers
 
         this.time.addEvent({
             delay: 1000,
             callback: () => {
+                this.lastSeconds++;
                 this.updateSatisfaction();
+                this.updateMoney();
+                this.researchBar.research();
                 this.checkEndGame();
             },
             loop: true
@@ -96,7 +114,8 @@ export class MainGame extends Scene {
             callback: () => {
                 this.citys.getChildren().forEach(city => {
                     const ct = city as City;
-                    ct.develop();
+                    if (ct.satisfied)
+                        ct.develop();
                 });
             },
             loop: true
@@ -108,11 +127,40 @@ export class MainGame extends Scene {
             callback: () => this.checkAddCity(),
             loop: true
         });
+
+        this.checkAddCity();
+    }
+
+    createUI() {
+        this.infoBox = this.add.text(0, 64, '', {
+            backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: { x: 8, y: 8 }, fontSize: 16
+        }).setDepth(100);
+        this.powerStations = this.add.group();
+        this.citys = this.add.group();
+        this.powerLines = this.add.group();
+
+        // toolbar
+        // this.toolBar = this.add.container(0, 0);
+        const style = { fontSize: '32px' };
+        const style2 = { fontSize: '24px' };
+        this.add.rectangle(0, 0, this.scale.width, 64, 0x555555).setOrigin(0);
+        const buildButton = this.add.rectangle(32, 32, 32, 32, 0xffff00).setOrigin(0.5).setInteractive({ useHandCursor: true })
+            .on('pointerdown', this.handlePickUpPowerStation, this);
+        this.satisfactionText = this.add.text(0, 0, 'Satisfaction: 999', style).setOrigin(0).setDepth(100);
+        this.moneyText = this.add.text(0, 0, 'Money: 99999999', style).setOrigin(0).setDepth(100);
+        this.toastText = this.add.text(this.scale.width / 2, 72, '', style2).setOrigin(0.5, 0).setDepth(100).setAlpha(0);
+
+        this.researchBar = new ResearchBar(this, this.scale.width, 64);
+        this.add.existing(this.researchBar);
+
+        Phaser.Actions.AlignTo([buildButton, this.satisfactionText, this.moneyText], Phaser.Display.Align.RIGHT_CENTER, 32, 0);
     }
 
     update() {
         this.updatePointerObject();
-        this.powerGrids.forEach(grid => grid.update());  // update the power grid
+        this.powerGrids.forEach(grid => {
+            grid.update();
+        });  // update the power grid
         this.updateText();
     }
 
@@ -131,21 +179,46 @@ export class MainGame extends Scene {
     }
 
     updateText() {
-        this.text.setText(`Satisfaction: ${this.satisfaction}`);
+        this.moneyText.setText(`Money: ${this.money.toFixed(0)}`);
+        this.satisfactionText.setText(`Satisfaction: ${this.satisfaction}`);
 
-        if (this.overObject && (this.powerStations.contains(this.overObject) || this.citys.contains(this.overObject))) {
+        if (this.overObject) {
             if (this.powerStations.contains(this.overObject)) {
                 const pws = this.overObject as PowerStation;
-                this.text.text += `\nGrid Comsumption: ${pws.grid.powerConsumption}`;
-                this.text.text += `\nGrid Capacity: ${pws.grid.powerCapacity}`;
+                const texts = [];
+                texts.push(`Grid Consumption: ${pws.grid.powerConsumption.toFixed(1)}`);
+                texts.push(`Grid wasted power: ${(pws.grid.powerUsage - pws.grid.powerConsumption).toFixed(1)}`);
+                texts.push(`Grid Capacity: ${pws.grid.powerCapacity}`);
+                this.infoBox.setText(texts);
             } else if (this.citys.contains(this.overObject)) {
                 const ct = this.overObject as City;
-                this.text.text += `\nGrid Comsumption: ${ct.grid.powerConsumption}`;
-                this.text.text += `\nGrid Capacity: ${ct.grid.powerCapacity}`;
-                this.text.text += `\nLevel: ${ct.level}`;
-                this.text.text += `\nPower Needed: ${ct.powerNeeded}`;
+                // this.text.text += `\nGrid Usage: ${ct.grid.powerUsage.toFixed(1)}`;
+                const texts = [];
+                texts.push(`Grid Consumption: ${ct.grid.powerConsumption.toFixed(1)}`);
+                texts.push(`Grid wasted power: ${(ct.grid.powerUsage - ct.grid.powerConsumption).toFixed(1)}`);
+                texts.push(`Grid Capacity: ${ct.grid.powerCapacity}`);
+                texts.push(`Level: ${ct.level}`);
+                texts.push(`Power Needed: ${ct.powerNeeded.toFixed(1)}`);
+                this.infoBox.setText(texts);
             }
         }
+    }
+
+    updateSatisfaction() {
+        this.powerGrids.forEach(grid => {
+            if (grid.powerUsage > grid.powerCapacity) {
+                this.satisfaction -= grid.consumers.length;
+            } else if (grid.powerUsage < grid.powerCapacity) {
+                this.satisfaction += grid.consumers.length;
+            }
+        });
+        this.satisfaction = Math.min(100, this.satisfaction);
+    }
+
+    updateMoney() {
+        this.powerGrids.forEach(grid => {
+            this.money += Math.min(grid.powerConsumption, grid.powerCapacity) * this.powerPrice;
+        });
     }
 
     handlePickUpPowerStation(pointer: Phaser.Input.Pointer, _localX: number, _localY: number, e: Phaser.Types.Input.EventData) {
@@ -167,6 +240,23 @@ export class MainGame extends Scene {
             if (dist < 64)
                 return;
 
+            const hasSpace = this.citys.getChildren().every(city => {
+                const ct = city as City;
+                const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, ct.x, ct.y);
+                if (dist < 32 + 16 * ct.level) {
+                    return false;
+                } else
+                return true;
+            });
+            if (!hasSpace)
+                return;
+            
+            if (this.money >= this.stationPrice) {
+                this.money -= this.stationPrice;
+            } else {
+                return;
+            }
+
             const st = new PowerStation(this, pointer.x, pointer.y);
             const [autoConnect, connectStation] = this.alignToPowerStations(st);
             this.powerStations.add(st, true);
@@ -181,19 +271,6 @@ export class MainGame extends Scene {
             this.pointerState = PointerState.Normal;  // reset state
             this.sound.play(SoundKey.PlaceDown);
             this.events.emit('powerStationPlaced');
-        }
-    }
-
-    handlePowerStationPointDown(_pointer: Phaser.Input.Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) {
-        const gobj = this as unknown as PowerStation;
-        const scene = gobj.scene as MainGame;
-        if (scene.pointerState === PointerState.Normal) {
-            scene.pointerState = PointerState.Connecting;
-            const x = gobj.x;
-            const y = gobj.y;
-            scene.connectFrom = gobj;
-            scene.pointerObject = scene.add.line(x, y, 0, 0, 0, 0, 0xffffff).setOrigin(0).setLineWidth(4);
-            e.stopPropagation();
         }
     }
 
@@ -258,13 +335,17 @@ export class MainGame extends Scene {
     }
 
     connect(from: BuildingInterface, to: BuildingInterface) {
-        const pline = new PowerLine(this, from, to);  // build powerline
-        this.powerLines.add(pline, true);
+        if (from === to) {
+            return false;
+        }
 
         this.powerGrids.splice(this.powerGrids.indexOf(from.grid), 1);  // merge power grid
         this.powerGrids.splice(this.powerGrids.indexOf(to.grid), 1);
         const grid = PowerGrid.mergeGrids(from.grid, to.grid);
         this.powerGrids.push(grid);
+        const pline = new PowerLine(this, from, to, grid);  // build powerline
+        this.powerLines.add(pline, true);
+        // console.log(pline.length); 
     }
 
     checkEndGame() {
@@ -285,19 +366,6 @@ export class MainGame extends Scene {
         }
     }
 
-    updateSatisfaction() {
-        this.lastSeconds++;
-
-        this.powerGrids.forEach(grid => {
-            if (grid.powerConsumption > grid.powerCapacity) {
-                this.satisfaction -= grid.consumers.length;
-            } else if (grid.powerConsumption < grid.powerCapacity) {
-                this.satisfaction += grid.consumers.length;
-            }
-        });
-        this.satisfaction = Math.min(100, this.satisfaction);
-    }
-
     checkAddCity() {
         let xSum = 0;
         let ySum = 0;
@@ -308,8 +376,8 @@ export class MainGame extends Scene {
             count += (city as City).level;
         });
 
-        const x1 = Phaser.Math.Between(64, this.scale.width - 64);
-        const y1 = Phaser.Math.Between(64, this.scale.height - 64);
+        const x1 = Phaser.Math.Between(80, this.scale.width - 80);
+        const y1 = Phaser.Math.Between(80, this.scale.height - 80);
         const x2 = count === 0 ? x1 : xSum / count;
         const y2 = count === 0 ? y1 : ySum / count;
 
@@ -334,6 +402,9 @@ export class MainGame extends Scene {
         });
 
         if (nearCity) {  // check for upgrade city
+            if (!upCity.satisfied)
+                return;
+
             hasSpace = hasSpace && this.citys.getChildren().every(city => {  // check if space enough
                 const ct = city as City;
                 if (ct === upCity) {

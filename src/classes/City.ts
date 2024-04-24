@@ -12,6 +12,7 @@ export default class City extends Phaser.GameObjects.Arc implements BuildingInte
   population: number = 0;
   level: number = 1;
   grid: PowerGrid;
+  satisfied: boolean = false;
 
   constructor(scene: Scene, x: number, y: number) {
     super(scene, x, y, 16, 0, 360, false, 0xFFFFFF);
@@ -21,12 +22,12 @@ export default class City extends Phaser.GameObjects.Arc implements BuildingInte
 
   setPowerNeeded(powerNeeded: number) {
     this.powerNeeded = powerNeeded;
-    this.grid?.updateConsumption();
+    this.grid?.update();
   }
 
   increasePowerNeeded(power: number) {
     this.powerNeeded += power;
-    this.grid?.updateConsumption();
+    this.grid?.update();
   }
 
   upgrade() {
@@ -41,7 +42,7 @@ export default class City extends Phaser.GameObjects.Arc implements BuildingInte
   }
 
   develop() {
-    this.powerNeeded += this.level;
+    this.powerNeeded += this.powerNeeded * this.level / 10;
     this.grid.update();
   }
 }
