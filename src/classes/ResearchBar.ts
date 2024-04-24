@@ -74,7 +74,7 @@ export default class ResearchBar extends Phaser.GameObjects.Container {
   research() {
     if (this.mainGame.money >= this.capacityFee) {
       this.mainGame.money -= this.capacityFee;
-      const p = this.capacityFee / 100 / Math.pow(2, this.capacityLevel - 1);
+      const p = this.capacityFee / 10 / Math.pow(2, this.capacityLevel - 1);
       const temp = Phaser.Math.Between(0, 100);
       if (p > temp) {
         this.capacityLevel++;
