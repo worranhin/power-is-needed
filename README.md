@@ -14,6 +14,8 @@ To manage power supplies for cities.
 - [ ] add map feature, including resources
 - [ ] AI competitor
 - [ ] mobile support
+- [ ] auto connect algorithm
+- [ ] consider using tile map
 
 ## Credits
 
