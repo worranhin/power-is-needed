@@ -4,6 +4,19 @@
 
 To manage power supplies for cities.
 
+## Road Map
+
+> Since I will not have time recently, I should take down the the ideas to implement in the future.
+
+- [ ] Improve graphic
+- [ ] more type of power station: solar power station, wind power station, hydropower station, nuclear power station, etc.
+- [ ] traditonal thermal power station should consume fossil fuel, which will become expensive as time goes by.
+- [ ] add map feature, including resources
+- [ ] AI competitor
+- [ ] mobile support
+- [ ] auto connect algorithm
+- [ ] consider using tile map
+
 ## Credits
 
 - Using [Phaser](https://phaser.io/) as Framework
