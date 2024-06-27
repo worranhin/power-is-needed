@@ -8,7 +8,7 @@ import { Preloader } from './scenes/Preloader';
 import { Tutorial } from './scenes/Tutorial';
 import { Credits } from './scenes/Credits';
 
-import Color_str from './const/Color_str';
+import ColorKey from "./const/ColorKey";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
@@ -17,7 +17,7 @@ const config: Types.Core.GameConfig = {
     width: 1024,
     height: 768,
     parent: 'game-container',
-    backgroundColor: Color_str.Secondary,  // '#028af8'
+    backgroundColor: ColorKey.Background_Str,  // '#028af8'
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH

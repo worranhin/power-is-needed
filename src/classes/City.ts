@@ -1,11 +1,12 @@
 // import Building from "./Building";
 import Phaser, { Scene } from "phaser";
-import type BuildingInterface from "./BuildingType";
+import type Building from "./Building";
 import PowerGrid from "./PowerGrid";
+import ColorKey from "../const/ColorKey";
 
-export default class City extends Phaser.GameObjects.Arc implements BuildingInterface {
-  from: BuildingInterface | null;
-  to: BuildingInterface | null;
+export default class City extends Phaser.GameObjects.Arc implements Building {
+  from: Building | null;
+  to: Building | null;
   powerReceived: number = 0;
   powerTransmitted: number = 0;
   powerNeeded: number = 1;
@@ -15,9 +16,13 @@ export default class City extends Phaser.GameObjects.Arc implements BuildingInte
   satisfied: boolean = false;
 
   constructor(scene: Scene, x: number, y: number) {
-    super(scene, x, y, 16, 0, 360, false, 0xFFFFFF);
+    super(scene, x, y, 16, 0, 360, false, ColorKey.City);
     this.grid = new PowerGrid().addConsumer(this);
-    this.setInteractive(new Phaser.Geom.Circle(16, 16, 16), Phaser.Geom.Circle.Contains);
+    this.setInteractive({
+      hitArea: new Phaser.Geom.Circle(16, 16, 16),
+      hitAreaCallback: Phaser.Geom.Circle.Contains,
+      draggable: true,
+      dropZone: true});
   }
 
   setPowerNeeded(powerNeeded: number) {
@@ -32,7 +37,7 @@ export default class City extends Phaser.GameObjects.Arc implements BuildingInte
 
   upgrade() {
     this.level += 1;
-    
+
     this.scene.tweens.add({
       targets: this,
       scale: this.level,

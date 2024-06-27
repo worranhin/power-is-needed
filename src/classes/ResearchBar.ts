@@ -4,6 +4,7 @@ import Color_num from "../const/Color_num";
 import { MainGame } from "../scenes/MainGame";
 import PowerStation from "./PowerStation";
 import PowerGrid from "./PowerGrid";
+import ColorKey from "../const/ColorKey";
 
 export default class ResearchBar extends Phaser.GameObjects.Container {
   capacityFee: number = 0;
@@ -24,17 +25,17 @@ export default class ResearchBar extends Phaser.GameObjects.Container {
     const style3 = { fontSize: '16px' };
     const feeBtnStyle = { fontSize: '16px', color: Color_str.Secondary };
 
-    const sideBarBackground = scene.add.rectangle(0, 0, 320, scene.scale.height - 64, 0x666666).setOrigin(0).setDepth(100);
+    const sideBarBackground = scene.add.rectangle(0, 0, 320, scene.scale.height - 64, ColorKey.ResearchBar).setOrigin(0).setDepth(100);
     const sideText = scene.add.text(16, 16, 'Research', style).setOrigin(0);
     this.add([sideBarBackground, sideText]);
 
     const capacityBlock = scene.add.container(0, 64);
     const addCapTitle = scene.add.text(16, 0, 'Add Capacity', subTitleStyle).setOrigin(0);
     this.addCapFeeText = scene.add.text(16, 32, 'Research Fee: 9999999', style3).setOrigin(0);
-    const addCapFeeDown = scene.add.circle(0, 0, 8, Color_num.Primary).setOrigin(0.5)
+    const addCapFeeDown = scene.add.circle(0, 0, 8, ColorKey.Primary).setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', this.decreaseCapFee, this);
-    const addCapFeeUp = scene.add.circle(0, 0, 8, Color_num.Primary).setOrigin(0.5)
+    const addCapFeeUp = scene.add.circle(0, 0, 8, ColorKey.Primary).setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', this.increaseCapFee, this);
     Phaser.Actions.AlignTo([this.addCapFeeText, addCapFeeDown, addCapFeeUp], Phaser.Display.Align.RIGHT_CENTER, 16, 0);
@@ -48,10 +49,10 @@ export default class ResearchBar extends Phaser.GameObjects.Container {
     const wasteBlock = scene.add.container(0, 144);
     const wasteTitle = scene.add.text(16, 0, 'Lower Powerline Waste', subTitleStyle).setOrigin(0);
     this.wasteFeeText = scene.add.text(16, 32, 'Research Fee: 9999999', style3).setOrigin(0);
-    const wasteFeeDown = scene.add.circle(0, 0, 8, Color_num.Primary).setOrigin(0.5)
+    const wasteFeeDown = scene.add.circle(0, 0, 8, ColorKey.Primary).setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', this.decreaseWasteFee, this);
-    const wasteFeeUp = scene.add.circle(0, 0, 8, Color_num.Primary).setOrigin(0.5)
+    const wasteFeeUp = scene.add.circle(0, 0, 8, ColorKey.Primary).setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', this.increaseWasteFee, this);
     Phaser.Actions.AlignTo([this.wasteFeeText, wasteFeeDown, wasteFeeUp], Phaser.Display.Align.RIGHT_CENTER, 16, 0);
@@ -86,7 +87,7 @@ export default class ResearchBar extends Phaser.GameObjects.Container {
           targets: this.mainGame.toastText,
           alpha: 0,
           duration: 5000
-          });
+        });
       }
     }
 
@@ -104,7 +105,7 @@ export default class ResearchBar extends Phaser.GameObjects.Container {
           targets: this.mainGame.toastText,
           alpha: 0,
           duration: 5000
-          });
+        });
       }
     }
   }

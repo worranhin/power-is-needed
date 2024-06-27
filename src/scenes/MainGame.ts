@@ -2,15 +2,18 @@ import { Scene } from 'phaser';
 import PowerStation from '../classes/PowerStation';
 import City from '../classes/City';
 import PowerLine from '../classes/PowerLine';
-import type BuildingInterface from '../classes/BuildingType';
+import type Building from '../classes/Building';
 import PowerGrid from '../classes/PowerGrid';
 import ResearchBar from '../classes/ResearchBar';
 import GameOverInput from '../classes/GameOverInput';
 import SoundKey from '../const/SoundKey';
 import SceneKey from '../const/SceneKey';
+import EventKey from '../const/EventKey';
+import ColorKey from '../const/ColorKey';
 
 enum PointerState {
     Normal,
+    Dragging,
     Building,
     Connecting
 }
@@ -34,7 +37,7 @@ export class MainGame extends Scene {
     overObject: Phaser.GameObjects.GameObject | null;
     powerGrids: PowerGrid[] = [];
     pointerState: PointerState = PointerState.Normal;
-    connectFrom: BuildingInterface | null = null;
+    connectFrom: Building | null = null;
     satisfaction: number = 50;
     lastSeconds: number = 0;
     randomWeight: number = 0.5;
@@ -42,6 +45,15 @@ export class MainGame extends Scene {
     powerPrice: number = 1;
     stationPrice: number = 500;
     sideBarOn: boolean = false;
+
+    dragStartX: number;
+    dragStartY: number;
+    dragLine: Phaser.GameObjects.Line | null;
+    dragFrom: Building | null;
+    dragTo: Building | null;
+    dragFromOutline: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Arc | null;
+    dragToOutline: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Arc | null;
+
 
     constructor(key?: string) {
         if (key === undefined) {
@@ -67,33 +79,19 @@ export class MainGame extends Scene {
     create() {
         // this.camera = this.cameras.main;
         this.createUI();
+        // const test = this.add.rectangle(100, 100, 32, 32, 0x00DD00).setOrigin(0.5).setInteractive({ draggable: true, dropZone: true });
+        // const test1 = this.add.rectangle(100, 200, 32, 32, 0x00DD00).setOrigin(0.5).setInteractive({ draggable: true, dropZone: true });
+        // const test2 = this.add.circle(200, 150, 16, 0xdd00000).setOrigin(0.5).setInteractive({ draggable: true, dropZone: true });
+        // this.createCity(200, 200);
+        // this.createCity(300, 300);
 
-        this.add.rectangle(this.scale.width - 32, 32, 32, 32, 0x00CC00).setOrigin(0.5).setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => {
-                if (!this.sideBarOn) {
-                    this.tweens.add({
-                        targets: this.researchBar,
-                        x: this.scale.width - 320,
-                        duration: 200
-                    });
-                    this.sideBarOn = true;
-                    this.events.emit('sideBarOpened');
-                } else {
-                    this.tweens.add({
-                        targets: this.researchBar,
-                        x: this.scale.width,
-                        duration: 200
-                    });
-                    this.sideBarOn = false;
-                    this.events.emit('sideBarClosed');
-                }
-            });
+        // config inputs
 
-        // inputs
         this.input.on('gameobjectdown', this.handleObjectDown, this);
         this.input.on('gameobjectover', this.handleObjectOver, this);
         this.input.on('pointerdown', this.handlePlaceDownPowerStation, this);
-        this.input.keyboard?.on('keydown-ESC', this.cancel, this);
+        this.input.keyboard?.on('keydown-ESC', this.cancelAction, this);
+        this.configDraggings();
 
         // Set Timers
 
@@ -143,8 +141,8 @@ export class MainGame extends Scene {
         // this.toolBar = this.add.container(0, 0);
         const style = { fontSize: '32px' };
         const style2 = { fontSize: '24px' };
-        this.add.rectangle(0, 0, this.scale.width, 64, 0x555555).setOrigin(0);
-        const buildButton = this.add.rectangle(32, 32, 32, 32, 0xffff00).setOrigin(0.5).setInteractive({ useHandCursor: true })
+        this.add.rectangle(0, 0, this.scale.width, 64, ColorKey.TopBar).setOrigin(0);
+        const buildButton = this.add.rectangle(32, 32, 32, 32, ColorKey.PowerStation).setOrigin(0.5).setInteractive({ useHandCursor: true })
             .on('pointerdown', this.handlePickUpPowerStation, this);
         this.satisfactionText = this.add.text(0, 0, 'Satisfaction: 999', style).setOrigin(0).setDepth(100);
         this.moneyText = this.add.text(0, 0, 'Money: 99999999', style).setOrigin(0).setDepth(100);
@@ -153,7 +151,52 @@ export class MainGame extends Scene {
         this.researchBar = new ResearchBar(this, this.scale.width, 64);
         this.add.existing(this.researchBar);
 
+        this.createResearchButton();
+
         Phaser.Actions.AlignTo([buildButton, this.satisfactionText, this.moneyText], Phaser.Display.Align.RIGHT_CENTER, 32, 0);
+    }
+
+    createCity(x: number, y: number) {
+        const ct = new City(this, x, y);
+        ct.scale = 0.1;
+        this.citys.add(ct, true);
+        this.sound.play(SoundKey.PopUp);
+        this.tweens.add({
+            targets: ct,
+            scale: 1,
+            duration: 500,
+            ease: 'Back.out'
+        });
+        this.powerGrids.push(ct.grid);
+        this.input.setDraggable(ct);
+    }
+
+    createPowerLine(from: Building, to: Building, grid: PowerGrid) {
+        const pline = new PowerLine(this, from, to, grid);  // build powerline
+        this.powerLines.add(pline, true);
+    }
+
+    createResearchButton() {
+        this.add.rectangle(this.scale.width - 32, 32, 32, 32, ColorKey.ResearchBtn).setOrigin(0.5).setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                if (!this.sideBarOn) {
+                    this.tweens.add({
+                        targets: this.researchBar,
+                        x: this.scale.width - 320,
+                        duration: 200
+                    });
+                    this.sideBarOn = true;
+                    this.events.emit('sideBarOpened');
+                } else {
+                    this.tweens.add({
+                        targets: this.researchBar,
+                        x: this.scale.width,
+                        duration: 200
+                    });
+                    this.sideBarOn = false;
+                    this.events.emit('sideBarClosed');
+                }
+            });
     }
 
     update() {
@@ -227,7 +270,7 @@ export class MainGame extends Scene {
 
         const pointerX = pointer.x;
         const pointerY = pointer.y;
-        this.pointerObject = this.add.rectangle(pointerX, pointerY, 32, 32, 0xffff00);
+        this.pointerObject = this.add.rectangle(pointerX, pointerY, 32, 32, ColorKey.PowerStation);
         this.physics.add.existing(this.pointerObject);
         this.pointerState = PointerState.Building;
         this.sound.play(SoundKey.PickUp);
@@ -246,11 +289,11 @@ export class MainGame extends Scene {
                 if (dist < 32 + 16 * ct.level) {
                     return false;
                 } else
-                return true;
+                    return true;
             });
             if (!hasSpace)
                 return;
-            
+
             if (this.money >= this.stationPrice) {
                 this.money -= this.stationPrice;
             } else {
@@ -263,7 +306,7 @@ export class MainGame extends Scene {
             this.powerGrids.push(st.grid);
 
             if (autoConnect && connectStation) {
-                this.connect(st, connectStation);
+                this.connectBuildings(st, connectStation);
             }
 
             this.pointerObject.destroy();
@@ -299,8 +342,8 @@ export class MainGame extends Scene {
         } else if (this.pointerState === PointerState.Connecting && this.connectFrom) {
             if (this.citys.contains(gameObject)) {  // target of connectioon
                 const city = gameObject as City;
-                const source = this.connectFrom as BuildingInterface;
-                this.connect(source, city);
+                const source = this.connectFrom as Building;
+                this.connectBuildings(source, city);
 
                 this.connectFrom = null;
                 this.pointerObject?.destroy();
@@ -310,8 +353,8 @@ export class MainGame extends Scene {
                 this.sound.play(SoundKey.Connect);
             } else if (this.powerStations.contains(gameObject)) {
                 const station = gameObject as PowerStation;
-                const source = this.connectFrom as BuildingInterface;
-                this.connect(source, station);
+                const source = this.connectFrom as Building;
+                this.connectBuildings(source, station);
 
                 this.connectFrom = null;
                 this.pointerObject?.destroy();
@@ -327,14 +370,74 @@ export class MainGame extends Scene {
         this.overObject = obj;
     }
 
-    cancel() {
+    configDraggings() {
+        this.input.on(EventKey.DragStart, (_pointer: Phaser.Input.Pointer, gameObject: Building) => {
+            this.pointerState = PointerState.Dragging;
+            this.dragStartX = gameObject.x;
+            this.dragStartY = gameObject.y;
+            this.dragFrom = gameObject;
+            this.dragLine = this.add.line(this.dragStartX, this.dragStartY, 0, 0, 0, 0, 0xffffff).setLineWidth(5).setDepth(-1);
+
+            if (gameObject instanceof Phaser.GameObjects.Rectangle)
+                this.dragFromOutline = this.add.rectangle(this.dragStartX, this.dragStartY, 40, 40, 0xffffff).setOrigin(0.5).setDepth(-1);
+            else if (gameObject instanceof Phaser.GameObjects.Arc)
+                this.dragFromOutline = this.add.circle(this.dragStartX, this.dragStartY, 20, 0xffffff).setOrigin(0.5).setDepth(-1);
+        });
+
+        this.input.on(EventKey.Drag, (pointer: Phaser.Input.Pointer) => {
+            this.dragLine?.setTo(0, 0, pointer.x - this.dragStartX, pointer.y - this.dragStartY);
+        });
+
+        this.input.on(EventKey.DragEnter, (_pointer: Phaser.Input.Pointer, _gameObject: Building, target: Building) => {
+            this.dragTo = target;
+            if (target instanceof Phaser.GameObjects.Rectangle) {
+                this.dragToOutline = this.add.rectangle(target.x, target.y, 40, 40, 0xffffff).setOrigin(0.5).setDepth(-1);
+            }
+            else if (target instanceof Phaser.GameObjects.Arc)
+                this.dragToOutline = this.add.circle(target.x, target.y, 20, 0xffffff).setOrigin(0.5).setDepth(-1);
+        });
+
+        this.input.on(EventKey.DragLeave, () => {
+            this.dragTo = null;
+            this.dragToOutline?.destroy();
+            this.dragToOutline = null;
+        });
+
+        this.input.on(EventKey.Drop, () => {
+            if (this.dragFrom !== null && this.dragTo !== null)
+                this.connectBuildings(this.dragFrom, this.dragTo);
+        });
+
+        this.input.on(EventKey.DragEnd, () => {
+            this.dragLine?.destroy();
+            this.dragFromOutline?.destroy();
+            this.dragToOutline?.destroy();
+            this.dragFrom = null;
+            this.dragTo = null;
+            this.dragLine = null;
+            this.dragFromOutline = null;
+            this.dragToOutline = null;
+            this.pointerState = PointerState.Normal;
+        });
+    }
+
+    /**
+     * cancel the current operation
+     */
+    cancelAction() {
         this.connectFrom = null;
         this.pointerObject?.destroy();
         this.pointerObject = null;
         this.pointerState = PointerState.Normal;
     }
 
-    connect(from: BuildingInterface, to: BuildingInterface) {
+    /**
+     * connect two buildings with powerline
+     * @param from one of the building to connect from
+     * @param to the building to connect to
+     * @returns 
+     */
+    connectBuildings(from: Building, to: Building) {
         if (from === to) {
             return false;
         }
@@ -343,8 +446,9 @@ export class MainGame extends Scene {
         this.powerGrids.splice(this.powerGrids.indexOf(to.grid), 1);
         const grid = PowerGrid.mergeGrids(from.grid, to.grid);
         this.powerGrids.push(grid);
-        const pline = new PowerLine(this, from, to, grid);  // build powerline
-        this.powerLines.add(pline, true);
+        this.createPowerLine(from, to, grid);
+        // const pline = new PowerLine(this, from, to, grid);  // build powerline
+        // this.powerLines.add(pline, true);
         // console.log(pline.length); 
     }
 
@@ -370,6 +474,7 @@ export class MainGame extends Scene {
         let xSum = 0;
         let ySum = 0;
         let count = 0;
+
         this.citys.getChildren().forEach(city => {
             xSum += (city as City).x * (city as City).level;
             ySum += (city as City).y * (city as City).level;

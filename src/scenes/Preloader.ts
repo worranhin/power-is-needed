@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import SoundKey from '../const/SoundKey';
+import ImageKey from '../const/ImageKey';
 
 export class Preloader extends Scene {
     constructor() {
@@ -33,6 +34,8 @@ export class Preloader extends Scene {
         this.load.audio(SoundKey.Connect, 'connect.mp3');
         this.load.audio(SoundKey.PickUp, 'pickUp.mp3');
         this.load.audio(SoundKey.PopUp, 'popUp.mp3');
+        this.load.image(ImageKey.MuteIcon, 'mute-dark.png');
+        this.load.image(ImageKey.VolumeIcon, 'volume-up-dark.png');
     }
 
     create() {

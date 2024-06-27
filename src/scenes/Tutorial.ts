@@ -9,7 +9,7 @@ export class Tutorial extends MainGame {
     create() {
         this.createUI();
 
-        const city = new City(this, this.scale.width/2, this.scale.height/2);
+        const city = new City(this, this.scale.width / 2, this.scale.height / 2);
         this.citys.add(city, true);
         this.powerGrids.push(city.grid);
 
@@ -17,7 +17,7 @@ export class Tutorial extends MainGame {
         this.input.on('gameobjectdown', this.handleObjectDown, this);
         this.input.on('gameobjectover', this.handleObjectOver, this);
         this.input.on('pointerdown', this.handlePlaceDownPowerStation, this);
-        this.input.keyboard?.on('keydown-ESC', this.cancel, this);
+        this.input.keyboard?.on('keydown-ESC', this.cancelAction, this);
 
         // tutorial
 
@@ -31,7 +31,7 @@ export class Tutorial extends MainGame {
 
         this.add.rectangle(this.scale.width - 32, 32, 32, 32, 0x00CC00).setOrigin(0.5).setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                if(!this.sideBarOn) {
+                if (!this.sideBarOn) {
                     this.tweens.add({
                         targets: this.researchBar,
                         x: this.scale.width - 320,

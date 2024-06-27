@@ -1,4 +1,4 @@
-import Color_num from "../const/Color_num";
+import ColorKey from "../const/ColorKey";
 import type City from "./City";
 import type PowerLine from "./PowerLine";
 import PowerStation from "./PowerStation";
@@ -55,13 +55,13 @@ export default class PowerGrid {
       this.consumers.forEach((consumer) => {
         const city = consumer as City;
         city.satisfied = true;
-        city.fillColor = 0xffffff;
+        city.fillColor = ColorKey.City;
       });
     } else {
       this.consumers.forEach((consumer) => {
         const city = consumer as City;
         city.satisfied = false;
-        city.fillColor = Color_num.Warning;
+        city.fillColor = ColorKey.CityWarn;
       });
     }
   }
